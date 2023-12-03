@@ -1,0 +1,12 @@
+services:
+  app:
+    container_name: fast-api
+    entrypoint:
+      - sleep
+      - infinity
+    image: python:3.12.0-bullseye
+    init: true
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
