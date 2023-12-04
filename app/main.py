@@ -1,7 +1,7 @@
 ''' Main App To Backedn Movies App '''
-from fastapi import FastAPI, Body
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 app = FastAPI()
@@ -12,11 +12,23 @@ app.description = "APIs para el consumo de Aplicacion de Peliculas"
 
 class Movie(BaseModel):
     id: Optional[int]
-    title: str
-    overview: str
-    year: int
-    rating: str
-    category: str
+    title: str = Field(max_length=15, min_length=5)
+    overview: str = Field(max_length=50, min_length=15)
+    year: int = Field(le=2022)
+    rating: float = Field(le=5.0, ge=0.0)
+    category: str = Field(max_length=15, min_length=5)
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "title": "Interestelar",
+                "overview": "Descripcion de Pelicula",
+                "rating": 2.3,
+                "year": 2020,
+                "category": "Accion"
+            }
+        }
 
 movies = []
 
