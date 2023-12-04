@@ -1,8 +1,8 @@
 ''' Main App To Backedn Movies App '''
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Path, Query
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 
 app = FastAPI()
 
@@ -24,8 +24,8 @@ class Movie(BaseModel):
                 "id": 1,
                 "title": "Interestelar",
                 "overview": "Descripcion de Pelicula",
-                "rating": 2.3,
                 "year": 2020,
+                "rating": 2.3,
                 "category": "Accion"
             }
         }
@@ -42,28 +42,28 @@ def read_root():
     '''
     )
 
-@app.get('/movies', tags=['movies'])
-def get_movies():
+@app.get('/movies', tags=['movies'], response_model=List[Movie])
+def get_movies() -> List[Movie]:
     ''' Get All Movies '''
-    return movies
+    return JSONResponse(content=movies)
 
-@app.get('/movies/{id_}', tags=['movies'])
-def get_movie(id_: int):
+@app.get('/movies/{id_}', tags=['movies'], response_model=Movie)
+def get_movie(id_: int = Path(ge=1, le=2000)) -> Movie:
     ''' get one movie by id '''
     for movie in movies:
         if movie.id == id_:
-            return movie
-    return {}
+            return JSONResponse(content=movie)
+    return JSONResponse(content={})
 
 @app.get('/movies/', tags=['movies'])
-def get_movies_by_category(category: str):
+def get_movies_by_category(category: str = Query(min_length=5, max_length=15)):
     ''' Get Movies by Category or Year '''
-    return [movie for movie in movies if movie.category == category]
+    return JSONResponse(content=[movie for movie in movies if movie.category == category])
 
 @app.post('/movies', tags=['movies'])
 def create_movie(movie: Movie):
-    movies.append(movie)
-    return movies
+    movies.append(movie.model_dump())
+    return JSONResponse(content=movies)
 
 @app.delete('/movies/{id_}', tags=['movies'])
 def delete_movie(id_: int):
@@ -71,7 +71,7 @@ def delete_movie(id_: int):
     filtered_movies = list(filter(filter_movie, movies))
     movies.clear()
     movies.extend(filtered_movies)
-    return movies
+    return JSONResponse(content=movies)
 
 @app.put('/movies/{id_}', tags=['movies'])
 def update_movie(id_: int, movie: Movie):
@@ -82,4 +82,4 @@ def update_movie(id_: int, movie: Movie):
             item.year = movie.year
             item.rating = movie.rating
             item.category = movie.category
-    return movies
+    return JSONResponse(content=movies)
