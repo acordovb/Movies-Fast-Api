@@ -3,7 +3,7 @@ from typing import Optional, List
 from fastapi import FastAPI, Path, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
-from jwt_manager import create_tocken
+from jwt_manager import create_tocken, validate_token
 
 app = FastAPI()
 
@@ -93,4 +93,8 @@ def update_movie(id_: int, movie: Movie):
 
 @app.post('/login', tags=['auth'])
 def login(user: User):
-    return user
+    if user.email == "admin@gmail.com" and user.password == "admin":
+        token: str = create_tocken(user.model_dump())
+        return JSONResponse(content=token, status_code=200)
+        # return validate_token(token)
+    return JSONResponse("Error en el logueo")
