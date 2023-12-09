@@ -1,14 +1,20 @@
 ''' Main App To Backedn Movies App '''
+from typing import Optional, List
 from fastapi import FastAPI, Path, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from jwt_manager import create_tocken
 
 app = FastAPI()
 
 app.title = "Movies App"
 app.version = "0.0.1"
 app.description = "APIs para el consumo de Aplicacion de Peliculas"
+
+
+class User(BaseModel):
+    email: str
+    password: str
 
 class Movie(BaseModel):
     id: Optional[int]
@@ -83,3 +89,8 @@ def update_movie(id_: int, movie: Movie):
             item.rating = movie.rating
             item.category = movie.category
     return JSONResponse(content=movies)
+
+
+@app.post('/login', tags=['auth'])
+def login(user: User):
+    return user
