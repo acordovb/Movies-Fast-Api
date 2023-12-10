@@ -1,7 +1,8 @@
 ''' Main App To Backedn Movies App '''
 from typing import Optional, List
-from fastapi import FastAPI, Path, Query
+from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel, Field
 from jwt_manager import create_tocken, validate_token
 
@@ -11,6 +12,13 @@ app.title = "Movies App"
 app.version = "0.0.1"
 app.description = "APIs para el consumo de Aplicacion de Peliculas"
 
+
+class JWTBearer(HTTPBearer):
+    async def __call__(self, request: Request):
+        auth = await super().__call__(request)
+        data = validate_token(auth.credentials)
+        if data['email'] != "admin@gmail.com":
+            raise HTTPException(status_code=403, detail="No tienes acceso para acceder aqui")
 
 class User(BaseModel):
     email: str
@@ -48,7 +56,7 @@ def read_root():
     '''
     )
 
-@app.get('/movies', tags=['movies'], response_model=List[Movie])
+@app.get('/movies', tags=['movies'], response_model=List[Movie], status_code=200, dependencies=[Depends(JWTBearer())])
 def get_movies() -> List[Movie]:
     ''' Get All Movies '''
     return JSONResponse(content=movies)
@@ -98,3 +106,18 @@ def login(user: User):
         return JSONResponse(content=token, status_code=200)
         # return validate_token(token)
     return JSONResponse("Error en el logueo")
+
+
+# from typing import Annotated
+
+# from fastapi import Depends, FastAPI
+# from fastapi.security import OAuth2PasswordBearer
+
+# app = FastAPI()
+
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
+# @app.get("/items/")
+# async def read_items(token: Annotated[str, Depends(oauth2_scheme)]):
+#     return {"token": token}
