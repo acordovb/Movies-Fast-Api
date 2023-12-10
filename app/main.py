@@ -14,6 +14,7 @@ app.description = "APIs para el consumo de Aplicacion de Peliculas"
 
 
 class JWTBearer(HTTPBearer):
+    ''' JWT Class to validate Auth '''
     async def __call__(self, request: Request):
         auth = await super().__call__(request)
         data = validate_token(auth.credentials)
@@ -21,10 +22,12 @@ class JWTBearer(HTTPBearer):
             raise HTTPException(status_code=403, detail="No tienes acceso para acceder aqui")
 
 class User(BaseModel):
+    ''' User Model Base '''
     email: str
     password: str
 
 class Movie(BaseModel):
+    ''' Base Model of Movie '''
     id: Optional[int]
     title: str = Field(max_length=15, min_length=5)
     overview: str = Field(max_length=50, min_length=15)
@@ -33,6 +36,7 @@ class Movie(BaseModel):
     category: str = Field(max_length=15, min_length=5)
 
     class Config:
+        ''' Config class to Movie Model '''
         json_schema_extra = {
             "example": {
                 "id": 1,
@@ -56,7 +60,12 @@ def read_root():
     '''
     )
 
-@app.get('/movies', tags=['movies'], response_model=List[Movie], status_code=200, dependencies=[Depends(JWTBearer())])
+@app.get(
+        '/movies',
+        tags=['movies'],
+        response_model=List[Movie],
+        status_code=200,
+        dependencies=[Depends(JWTBearer())])
 def get_movies() -> List[Movie]:
     ''' Get All Movies '''
     return JSONResponse(content=movies)
@@ -76,19 +85,21 @@ def get_movies_by_category(category: str = Query(min_length=5, max_length=15)):
 
 @app.post('/movies', tags=['movies'])
 def create_movie(movie: Movie):
+    ''' Create a Movie '''
     movies.append(movie.model_dump())
     return JSONResponse(content=movies)
 
 @app.delete('/movies/{id_}', tags=['movies'])
 def delete_movie(id_: int):
-    filter_movie = lambda movie : movie.id != id_
-    filtered_movies = list(filter(filter_movie, movies))
+    ''' Delete a movie by id '''
+    filtered_movies = list(filter(lambda movie : movie.id != id_, movies))
     movies.clear()
     movies.extend(filtered_movies)
     return JSONResponse(content=movies)
 
 @app.put('/movies/{id_}', tags=['movies'])
 def update_movie(id_: int, movie: Movie):
+    ''' Update data in movie '''
     for item in movies:
         if item.id == id_:
             item.title = movie.title
@@ -101,23 +112,9 @@ def update_movie(id_: int, movie: Movie):
 
 @app.post('/login', tags=['auth'])
 def login(user: User):
+    ''' Login with admin '''
     if user.email == "admin@gmail.com" and user.password == "admin":
         token: str = create_tocken(user.model_dump())
         return JSONResponse(content=token, status_code=200)
         # return validate_token(token)
     return JSONResponse("Error en el logueo")
-
-
-# from typing import Annotated
-
-# from fastapi import Depends, FastAPI
-# from fastapi.security import OAuth2PasswordBearer
-
-# app = FastAPI()
-
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-# @app.get("/items/")
-# async def read_items(token: Annotated[str, Depends(oauth2_scheme)]):
-#     return {"token": token}
