@@ -1,13 +1,13 @@
 ''' Routers For Movies '''
 
 from typing import Optional, List
-from fastapi import Depends, Path, Query, APIRouter
+from fastapi import Path, Query, APIRouter
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 from config.database import Session
 from models.movie import Movie as MovieModel
-from middlewares.jwt_bearer import JWTBearer
+
 
 movie_router = APIRouter()
 
@@ -33,15 +33,14 @@ class Movie(BaseModel):
             }
         }
 
-@movie_router.get('/movies',
-         tags=['movies'], response_model=List[Movie], dependencies=[Depends(JWTBearer())])
+@movie_router.get('', response_model=List[Movie])
 def get_movies() -> List[Movie]:
     ''' Get All Movies '''
     db = Session()
     result = db.query(MovieModel).all()
     return JSONResponse(status_code=200,content=jsonable_encoder(result))
 
-@movie_router.get('/movies/{id_}', tags=['movies'], response_model=Movie)
+@movie_router.get('/{id_}', response_model=Movie)
 def get_movie(id_: int = Path(ge=1, le=2000)) -> Movie:
     ''' get one movie by id '''
     db = Session()
@@ -50,7 +49,7 @@ def get_movie(id_: int = Path(ge=1, le=2000)) -> Movie:
         return JSONResponse(status_code=404, content={'msg': 'No encontrado'})
     return JSONResponse(content=jsonable_encoder(result), status_code=200)
 
-@movie_router.get('/movies/', tags=['movies'])
+@movie_router.get('/')
 def get_movies_by_category(category: str = Query(min_length=5, max_length=15)):
     ''' Get Movies by Category or Year '''
     db = Session()
@@ -59,7 +58,7 @@ def get_movies_by_category(category: str = Query(min_length=5, max_length=15)):
         return JSONResponse(status_code=404, content={'msg': 'No se encontro la categoria'})
     return JSONResponse(content=jsonable_encoder(result), status_code=200)
 
-@movie_router.post('/movies', tags=['movies'])
+@movie_router.post('')
 def create_movie(movie: Movie):
     ''' Create a Movie '''
     db = Session()
@@ -68,7 +67,7 @@ def create_movie(movie: Movie):
     db.commit()
     return JSONResponse(content={'msg': 'La pelicula fue agregada'})
 
-@movie_router.delete('/movies/{id_}', tags=['movies'])
+@movie_router.delete('/{id_}')
 def delete_movie(id_: int):
     ''' Delete a movie by id '''
     db = Session()
@@ -79,7 +78,7 @@ def delete_movie(id_: int):
     db.commit()
     return JSONResponse(content={'msg': 'Se elimino la movie'})
 
-@movie_router.put('/movies/{id_}', tags=['movies'])
+@movie_router.put('/{id_}')
 def update_movie(id_: int, movie: Movie ) -> dict:
     ''' Update data in movie '''
     db = Session()

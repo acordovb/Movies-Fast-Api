@@ -13,7 +13,7 @@ class User(BaseModel):
     password: str
 
 
-@auth_router.post('/login', tags=['auth'])
+@auth_router.post('')
 def login(user: User):
     ''' Login with admin '''
     if user.email == "admin@gmail.com" and user.password == "admin":
