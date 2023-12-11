@@ -1,50 +1,27 @@
 ''' Routers For Movies '''
 
-from typing import Optional, List
+from typing import List
 from fastapi import Path, Query, APIRouter
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, Field
 from config.database import Session
-from models.movie import Movie as MovieModel
-
+from services.movie import MovieService
+from schemas.movie import Movie
 
 movie_router = APIRouter()
-
-class Movie(BaseModel):
-    ''' Base Model of Movie '''
-    id: Optional[int] = None
-    title: str = Field(max_length=15, min_length=5)
-    overview: str = Field(max_length=50, min_length=15)
-    year: int = Field(le=2022)
-    rating: float = Field(le=5.0, ge=0.0)
-    category: str = Field(max_length=15, min_length=5)
-
-    class Config:
-        ''' Config class to Movie Model '''
-        json_schema_extra = {
-            "example": {
-                "id": 1,
-                "title": "Interestelar",
-                "overview": "Descripcion de Pelicula",
-                "year": 2020,
-                "rating": 2.3,
-                "category": "Accion"
-            }
-        }
 
 @movie_router.get('', response_model=List[Movie])
 def get_movies() -> List[Movie]:
     ''' Get All Movies '''
     db = Session()
-    result = db.query(MovieModel).all()
+    result = MovieService(db).get_all()
     return JSONResponse(status_code=200,content=jsonable_encoder(result))
 
 @movie_router.get('/{id_}', response_model=Movie)
 def get_movie(id_: int = Path(ge=1, le=2000)) -> Movie:
     ''' get one movie by id '''
     db = Session()
-    result = db.query(MovieModel).filter(MovieModel.id == id_).one_or_none()
+    result = MovieService(db).get_by_id(id_)
     if not result:
         return JSONResponse(status_code=404, content={'msg': 'No encontrado'})
     return JSONResponse(content=jsonable_encoder(result), status_code=200)
@@ -53,7 +30,7 @@ def get_movie(id_: int = Path(ge=1, le=2000)) -> Movie:
 def get_movies_by_category(category: str = Query(min_length=5, max_length=15)):
     ''' Get Movies by Category or Year '''
     db = Session()
-    result = db.query(MovieModel).filter(MovieModel.category == category).all()
+    result = MovieService(db).get_by_category(category)
     if not result:
         return JSONResponse(status_code=404, content={'msg': 'No se encontro la categoria'})
     return JSONResponse(content=jsonable_encoder(result), status_code=200)
@@ -62,31 +39,25 @@ def get_movies_by_category(category: str = Query(min_length=5, max_length=15)):
 def create_movie(movie: Movie):
     ''' Create a Movie '''
     db = Session()
-    new_movie = MovieModel(**movie.model_dump())
-    db.add(new_movie)
-    db.commit()
+    MovieService(db).create(movie)
     return JSONResponse(content={'msg': 'La pelicula fue agregada'})
 
 @movie_router.delete('/{id_}')
 def delete_movie(id_: int):
     ''' Delete a movie by id '''
     db = Session()
-    result = db.query( MovieModel ).filter( MovieModel.id == id_ ).one_or_none()
+    result = MovieService(db).get_by_id(id_)
     if not result:
         return JSONResponse( status_code= 404, content={ 'message' : 'No encontrado' })
-    db.delete(result)
-    db.commit()
+    MovieService(db).delete(id_)
     return JSONResponse(content={'msg': 'Se elimino la movie'})
 
 @movie_router.put('/{id_}')
 def update_movie(id_: int, movie: Movie ) -> dict:
     ''' Update data in movie '''
     db = Session()
-    result = db.query( MovieModel ).filter( MovieModel.id == id_ ).one_or_none()
+    result = MovieService(db).get_by_id(id_)
     if not result:
         return JSONResponse( status_code= 404, content={ 'message' : 'No encontrado' })
-    movie_to_update = movie.model_dump()
-    movie_to_update['id'] = id_
-    result.update( **movie_to_update )
-    db.commit()
+    MovieService(db).update(id_, movie)
     return JSONResponse( content={"message": "Se ha actualizado la pelicula"})

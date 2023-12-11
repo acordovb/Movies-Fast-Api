@@ -14,8 +14,9 @@ class Movie(Base):
     rating = Column(Float)
     category = Column(String)
 
-    def update( self, **kwargs ):
+    def update( self, id_, **kwargs ):
         ''' Update movie '''
         for key, value in kwargs.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+        setattr(self, 'id', id_)
