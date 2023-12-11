@@ -1,13 +1,14 @@
 ''' Main App To Backedn Movies App '''
 from typing import Optional, List
-from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request
+from fastapi import Depends, FastAPI, Path, Query
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.security import HTTPBearer
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
-from jwt_manager import create_tocken, validate_token
+from jwt_manager import create_tocken
 from config.database import Session, engine, Base
 from models.movie import Movie as MovieModel
+from middlewares.error_handler import ErrorHandler
+from middlewares.jwt_bearer import JWTBearer
 
 app = FastAPI()
 
@@ -15,15 +16,9 @@ app.title = "Movies App"
 app.version = "0.0.1"
 app.description = "APIs para el consumo de Aplicacion de Peliculas"
 
-Base.metadata.create_all(bind=engine)
+app.add_middleware(ErrorHandler)
 
-class JWTBearer(HTTPBearer):
-    ''' JWT Class to validate Auth '''
-    async def __call__(self, request: Request):
-        auth = await super().__call__(request)
-        data = validate_token(auth.credentials)
-        if data['email'] != "admin@gmail.com":
-            raise HTTPException(status_code=403, detail="No tienes acceso para acceder aqui")
+Base.metadata.create_all(bind=engine)
 
 class User(BaseModel):
     ''' User Model Base '''
